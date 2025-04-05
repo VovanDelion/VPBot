@@ -16,7 +16,21 @@ class OrderProcess(StatesGroup):
     EnterAddress = State()
     EnterPhone = State()
 
-@router.callback_query(F.data.startswith('delivery_'), OrderProcess.ChooseDelivery)
+
+@router.message(F.text == "📦 Мои заказы")
+async def show_user_orders(message: types.Message):
+    orders = await db.get_user_orders(message.from_user.id)
+    if not orders:
+        await message.answer("У вас пока нет заказов")
+        return
+
+    text = "📦 Ваши заказы:\n\n"
+    for order in orders:
+        text += f"🔹 #{order['id']} - {order['status']} - {order['total']} руб.\n"
+
+    await message.answer(text)
+
+@router.callback_query(F.text == "📦 Мои заказы")
 async def process_delivery_choice(call: types.CallbackQuery, state: FSMContext):
     delivery_type = call.data.split('_')[1]
     await state.update_data(delivery_type=delivery_type)

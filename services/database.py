@@ -51,6 +51,40 @@ class Database:
                     price REAL NOT NULL,
                     category TEXT
                 );
+
+                CREATE TABLE IF NOT EXISTS orders (
+                    order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    total_amount REAL NOT NULL,
+                    delivery_type TEXT NOT NULL,
+                    address TEXT,
+                    phone TEXT NOT NULL,
+                    status TEXT DEFAULT 'new',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(user_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS order_items (
+                    item_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    order_id INTEGER NOT NULL,
+                    dish_id INTEGER NOT NULL,
+                    quantity INTEGER NOT NULL,
+                    price REAL NOT NULL,
+                    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+                    FOREIGN KEY (dish_id) REFERENCES dishes(dish_id)
+                );
+                
+                CREATE TABLE IF NOT EXISTS feedback (
+                feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                order_id INTEGER NOT NULL,
+                rating INTEGER NOT NULL,
+                comment TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id),
+                FOREIGN KEY (order_id) REFERENCES orders(order_id)
+            );
+            
             ''')
             await self.conn.commit()
             logger.info("Таблицы успешно созданы")
@@ -134,6 +168,217 @@ class Database:
         except Exception as e:
             logger.error(f"Ошибка при получении пользователя {user_id}: {e}")
             return None
+
+    async def create_order(self, user_id: int, total_amount: float, delivery_type: str,
+                           address: str, phone: str) -> int:
+        """Создаем новый заказ и возвращаем его ID"""
+        try:
+            cursor = await self.conn.execute(
+                "INSERT INTO orders (user_id, total_amount, delivery_type, address, phone) "
+                "VALUES (?, ?, ?, ?, ?) RETURNING order_id",
+                (user_id, total_amount, delivery_type, address, phone)
+            )
+            order_id = (await cursor.fetchone())[0]
+            await self.conn.commit()
+            return order_id
+        except Exception as e:
+            logger.error(f"Ошибка создания заказа: {e}")
+            raise
+
+    async def add_order_item(self, order_id: int, dish_id: int, quantity: int, price: float):
+        """Добавляем позицию в заказ"""
+        try:
+            await self.conn.execute(
+                "INSERT INTO order_items (order_id, dish_id, quantity, price) "
+                "VALUES (?, ?, ?, ?)",
+                (order_id, dish_id, quantity, price)
+            )
+            await self.conn.commit()
+        except Exception as e:
+            logger.error(f"Ошибка добавления позиции в заказ: {e}")
+            raise
+
+    async def get_user_orders(self, user_id: int):
+        """Получаем список заказов пользователя"""
+        try:
+            async with self.conn.execute(
+                    "SELECT order_id, total_amount, delivery_type, status, created_at "
+                    "FROM orders WHERE user_id = ? ORDER BY created_at DESC",
+                    (user_id,)
+            ) as cursor:
+                return await cursor.fetchall()
+        except Exception as e:
+            logger.error(f"Ошибка получения заказов пользователя {user_id}: {e}")
+            return []
+
+    async def get_order_details(self, order_id: int):
+        """Получаем детали заказа"""
+        try:
+            async with self.conn.execute(
+                    "SELECT * FROM orders WHERE order_id = ?",
+                    (order_id,)
+            ) as cursor:
+                order = await cursor.fetchone()
+
+            async with self.conn.execute(
+                    "SELECT d.name, oi.quantity, oi.price "
+                    "FROM order_items oi "
+                    "JOIN dishes d ON oi.dish_id = d.dish_id "
+                    "WHERE oi.order_id = ?",
+                    (order_id,)
+            ) as cursor:
+                items = await cursor.fetchall()
+
+            return {'order': order, 'items': items}
+        except Exception as e:
+            logger.error(f"Ошибка получения деталей заказа {order_id}: {e}")
+            return None
+
+    async def add_feedback(self, user_id: int, order_id: int, rating: int, comment: Optional[str] = None) -> bool:
+        """Добавляем отзыв к заказу"""
+        try:
+            await self.conn.execute(
+                "INSERT INTO feedback (user_id, order_id, rating, comment) VALUES (?, ?, ?, ?)",
+                (user_id, order_id, rating, comment)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка добавления отзыва: {e}")
+            return False
+
+    async def get_feedback(self, order_id: int):
+        """Получаем отзыв по ID заказа"""
+        try:
+            async with self.conn.execute(
+                    "SELECT * FROM feedback WHERE order_id = ?",
+                    (order_id,)
+            ) as cursor:
+                return await cursor.fetchone()
+        except Exception as e:
+            logger.error(f"Ошибка получения отзыва для заказа {order_id}: {e}")
+            return None
+
+    async def get_user_feedback(self, user_id: int):
+        """Получаем все отзывы пользователя"""
+        try:
+            async with self.conn.execute(
+                    "SELECT * FROM feedback WHERE user_id = ? ORDER BY created_at DESC",
+                    (user_id,)
+            ) as cursor:
+                return await cursor.fetchall()
+        except Exception as e:
+            logger.error(f"Ошибка получения отзывов пользователя {user_id}: {e}")
+            return []
+
+    async def get_admin_stats(self):
+        """Получение статистики для админ-панели"""
+        try:
+            # Общее количество заказов
+            async with self.conn.execute("SELECT COUNT(*) FROM orders") as cursor:
+                total_orders = (await cursor.fetchone())[0] or 0
+
+            # Средний чек
+            async with self.conn.execute("SELECT AVG(total_amount) FROM orders") as cursor:
+                avg_order = (await cursor.fetchone())[0] or 0
+
+            # Общий доход
+            async with self.conn.execute("SELECT SUM(total_amount) FROM orders") as cursor:
+                total_revenue = (await cursor.fetchone())[0] or 0
+
+            # Последние 5 заказов
+            recent_orders = await self.get_recent_orders(5)
+
+            return {
+                'total_orders': total_orders,
+                'avg_order': round(avg_order, 2),
+                'total_revenue': round(total_revenue, 2),
+                'recent_orders': "\n".join(
+                    f"#{o['order_id']} - {o['total_amount']} руб. - {o['status']}"
+                    for o in recent_orders
+                )
+            }
+        except Exception as e:
+            logger.error(f"Ошибка получения статистики: {e}")
+            return {
+                'total_orders': 0,
+                'avg_order': 0,
+                'total_revenue': 0,
+                'recent_orders': "Нет данных"
+            }
+
+    async def get_recent_orders(self, limit: int = 5):
+        """Получение последних заказов"""
+        try:
+            async with self.conn.execute(
+                    "SELECT order_id, total_amount, status FROM orders ORDER BY created_at DESC LIMIT ?",
+                    (limit,)
+            ) as cursor:
+                return [dict(row) for row in await cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Ошибка получения последних заказов: {e}")
+            return []
+
+    async def get_all_dishes(self):
+        """Получение всех блюд для управления меню"""
+        try:
+            async with self.conn.execute(
+                    "SELECT dish_id, name, price, category FROM dishes ORDER BY category, name"
+            ) as cursor:
+                return [dict(row) for row in await cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Ошибка получения списка блюд: {e}")
+            return []
+
+    async def update_dish(self, dish_id: int, name: str, description: str, price: float, category: str) -> bool:
+        """Обновление информации о блюде"""
+        try:
+            await self.conn.execute(
+                "UPDATE dishes SET name = ?, description = ?, price = ?, category = ? WHERE dish_id = ?",
+                (name, description, price, category, dish_id)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка обновления блюда {dish_id}: {e}")
+            return False
+
+    async def delete_dish(self, dish_id: int) -> bool:
+        """Удаление блюда из меню"""
+        try:
+            await self.conn.execute(
+                "DELETE FROM dishes WHERE dish_id = ?",
+                (dish_id,)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка удаления блюда {dish_id}: {e}")
+            return False
+
+    async def get_all_users(self):
+        """Получение списка всех пользователей"""
+        try:
+            async with self.conn.execute(
+                    "SELECT user_id, username, full_name, phone, registration_date FROM users ORDER BY registration_date DESC"
+            ) as cursor:
+                return [dict(row) for row in await cursor.fetchall()]
+        except Exception as e:
+            logger.error(f"Ошибка получения списка пользователей: {e}")
+            return []
+
+    async def update_order_status(self, order_id: int, status: str) -> bool:
+        """Обновление статуса заказа"""
+        try:
+            await self.conn.execute(
+                "UPDATE orders SET status = ? WHERE order_id = ?",
+                (status, order_id)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка обновления статуса заказа {order_id}: {e}")
+            return False
 
     async def create_cart_tables(self):
         """Создаем таблицы для корзины"""

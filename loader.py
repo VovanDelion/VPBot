@@ -5,7 +5,6 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from data.config import BOT_TOKEN
 from services.database import Database
 
-# Инициализация объектов
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)

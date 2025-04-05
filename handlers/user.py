@@ -23,8 +23,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         await state.set_state(UserRegistration.Phone)
     else:
         await message.answer(
-            f"🍽 Добро пожаловать, {user['full_name'] or message.from_user.full_name}!\n"
-            "Выберите действие:",
+            f"🍽 Добро пожаловать, {user[2] or message.from_user.full_name}!\n",
             reply_markup=main_menu_keyboard()
         )
 

@@ -5,7 +5,6 @@ from handlers import register_all_handlers
 from middlewares import register_all_middlewares
 from utils.set_bot_commands import set_default_commands
 
-# Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -37,26 +36,20 @@ async def main():
     try:
         bot, dp, db = await setup()
 
-        # Проверка подключения к БД
         if not db or not db.conn:
             logger.error("Не удалось подключиться к базе данных")
             raise RuntimeError("Database connection failed")
 
-        # Регистрация middleware
         register_all_middlewares(dp)
 
-        # Регистрация обработчиков
         register_all_handlers(dp)
 
-        # Действия при запуске
         await on_startup(bot, db)
 
-        # Запуск бота
         await dp.start_polling(bot)
     except Exception as e:
         logger.critical(f"Фатальная ошибка: {e}")
     finally:
-        # Действия при выключении
         await on_shutdown(bot, db)
 
 

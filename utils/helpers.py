@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 
 
 def format_cart(cart_items):
@@ -50,4 +51,4 @@ def is_current_month(date_str):
 
 
 async def is_admin(user_id):
-    return user_id in ADMIN_IDS
+    return user_id in list(map(int, os.getenv('ADMIN_IDS').split(',')))

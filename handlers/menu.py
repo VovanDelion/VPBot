@@ -12,7 +12,7 @@ class MenuNavigation(StatesGroup):
     ChooseCategory = State()
     ChooseDish = State()
 
-@router.message(Command('menu'))
+@router.message(F.text == '🍽 Меню')
 async def show_menu_categories(message: types.Message, state: FSMContext):
     categories = await db.get_dish_categories()
     await message.answer(
@@ -37,14 +37,14 @@ async def show_dish_details(call: types.CallbackQuery, state: FSMContext):
     dish_id = int(call.data.split('_')[1])
     dish = await db.get_dish_by_id(dish_id)
 
-    text = f"🍛 <b>{dish[1]}</b>\n\n"  # name
-    text += f"📝 {dish[2]}\n\n"  # description
-    text += f"💰 Цена: {dish[3]} руб.\n\n"  # price
+    text = f"🍛 <b>{dish[1]}</b>\n\n"
+    text += f"📝 {dish[2]}\n\n"
+    text += f"💰 Цена: {dish[3]} руб.\n\n"
     text += "Выберите действие:"
 
     await call.message.edit_text(
         text,
-        reply_markup=back_to_menu_keyboard(dish_id)  # Fixed typo: reply_mup -> reply_markup
+        reply_markup=back_to_menu_keyboard(dish_id)
     )
 
 @router.callback_query(F.data == 'back_to_menu')

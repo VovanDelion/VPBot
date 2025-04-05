@@ -8,11 +8,7 @@ def menu_categories_keyboard(categories):
         keyboard.inline_keyboard.append([
             InlineKeyboardButton(
                 text=category['name'],
-                callback_data=json.dumps({
-                    'type': 'menu',
-                    'action': 'view_category',
-                    'category_id': category['id']
-                })
+                callback_data=f"category_{category['id']}"
             )
         ])
 
@@ -163,23 +159,26 @@ def confirm_order_keyboard(order_id):
     ])
 
 def admin_menu_keyboard():
-    keyboard = InlineKeyboardMarkup(row_width=2)
-    keyboard.add(
-        InlineKeyboardButton(
-            text='📊 Статистика',
-            callback_data=json.dumps({'type': 'admin', 'action': 'stats'})
-        ),
-        InlineKeyboardButton(
-            text='📝 Управление меню',
-            callback_data=json.dumps({'type': 'admin', 'action': 'manage_menu'})
-        ),
-        InlineKeyboardButton(
-            text='📦 Управление заказами',
-            callback_data=json.dumps({'type': 'admin', 'action': 'manage_orders'})
-        ),
-        InlineKeyboardButton(
-            text='👥 Управление пользователями',
-            callback_data=json.dumps({'type': 'admin', 'action': 'manage_users'})
-        )
-    )
-    return keyboard
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text='📊 Статистика',
+                callback_data="admin_view_stats")
+        ],
+        [
+            InlineKeyboardButton(
+                text='📝 Управление меню',
+                callback_data="admin_manage_menu")
+        ],
+        [
+            InlineKeyboardButton(
+                text='📦 Управление заказами',
+                callback_data="admin_manage_orders")
+        ],
+        [
+            InlineKeyboardButton(
+                text='👥 Управление пользователями',
+                callback_data="admin_manage_users")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
