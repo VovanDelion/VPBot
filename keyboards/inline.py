@@ -4,13 +4,29 @@ import json
 
 def menu_categories_keyboard(categories):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-    for category in categories:
-        keyboard.inline_keyboard.append([
-            InlineKeyboardButton(
-                text=category['name'],
-                callback_data=f"category_{category['id']}"
-            )
-        ])
+
+    for i in range(0, len(categories), 2):
+        row = []
+        for category in categories[i:i + 2]:
+            if isinstance(category, dict):
+                cat_id = category.get('category_id', category.get('id'))
+                name = category.get('name')
+            else:
+                cat_id = category[0]
+                name = category[1]
+
+            if cat_id and name:
+                row.append(InlineKeyboardButton(
+                    text=name,
+                    callback_data=json.dumps({
+                        'type': 'category',
+                        'action': 'select',
+                        'category_id': int(cat_id)
+                    })
+                ))
+
+        if row:
+            keyboard.inline_keyboard.append(row)
 
     keyboard.inline_keyboard.append([
         InlineKeyboardButton(
@@ -18,7 +34,21 @@ def menu_categories_keyboard(categories):
             callback_data=json.dumps({'type': 'cart', 'action': 'view'})
         )
     ])
+
     return keyboard
+
+def edit_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✏️ Название", callback_data="admin_edit_name"),
+            InlineKeyboardButton(text="📝 Описание", callback_data="admin_edit_description")
+        ],
+        [
+            InlineKeyboardButton(text="💰 Цена", callback_data="admin_edit_price"),
+            InlineKeyboardButton(text="📂 Категория", callback_data="admin_edit_category")
+        ],
+        [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")]
+    ])
 
 
 def back_to_menu_keyboard(dish_id):
@@ -40,23 +70,39 @@ def back_to_menu_keyboard(dish_id):
 
 def dishes_keyboard(dishes, category_id):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+
     for dish in dishes:
+        if isinstance(dish, dict):
+            dish_id = dish.get('dish_id', dish.get('id'))
+            name = dish.get('name')
+            price = dish.get('price')
+        else:
+            dish_id = dish[0]
+            name = dish[1]
+            price = dish[2] if len(dish) > 2 else None
+
+        if not dish_id or not name:
+            continue
+
+        text = f"{name}"
+        if price is not None:
+            text += f" - {price}₽"
+
         keyboard.inline_keyboard.append([
             InlineKeyboardButton(
-                text=dish['name'],
+                text=text,
                 callback_data=json.dumps({
-                    'type': 'menu',
-                    'action': 'view_dish',
-                    'dish_id': dish['id'],
-                    'category_id': category_id
+                    'type': 'dish',
+                    'action': 'select',
+                    'dish_id': int(dish_id),
+                    'category_id': int(category_id)
                 })
             )
         ])
 
-    # Добавляем кнопки назад и корзины в один ряд
     keyboard.inline_keyboard.append([
         InlineKeyboardButton(
-            text='◀️ Назад',
+            text='◀️ Назад к категориям',
             callback_data=json.dumps({'type': 'menu', 'action': 'view_categories'})
         ),
         InlineKeyboardButton(
@@ -64,6 +110,7 @@ def dishes_keyboard(dishes, category_id):
             callback_data=json.dumps({'type': 'cart', 'action': 'view'})
         )
     ])
+
     return keyboard
 
 def cart_keyboard(cart_items):
@@ -161,24 +208,15 @@ def confirm_order_keyboard(order_id):
 def admin_menu_keyboard():
     buttons = [
         [
-            InlineKeyboardButton(
-                text='📊 Статистика',
-                callback_data="admin_view_stats")
+            InlineKeyboardButton(text="📊 Статистика", callback_data="admin_view_stats")
         ],
         [
-            InlineKeyboardButton(
-                text='📝 Управление меню',
-                callback_data="admin_manage_menu")
+            InlineKeyboardButton(text="📝 Управление меню", callback_data="admin_manage_menu"),
+            InlineKeyboardButton(text="📂 Категории", callback_data="admin_manage_categories")
         ],
         [
-            InlineKeyboardButton(
-                text='📦 Управление заказами',
-                callback_data="admin_manage_orders")
-        ],
-        [
-            InlineKeyboardButton(
-                text='👥 Управление пользователями',
-                callback_data="admin_manage_users")
+            InlineKeyboardButton(text="📦 Управление заказами", callback_data="admin_manage_orders"),
+            InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_manage_users")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

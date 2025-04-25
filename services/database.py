@@ -36,6 +36,20 @@ class Database:
         """Создаем таблицы в базе данных"""
         try:
             await self.conn.executescript('''
+                CREATE TABLE IF NOT EXISTS categories (
+                category_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE
+            );
+
+            CREATE TABLE IF NOT EXISTS dishes (
+                dish_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                price REAL NOT NULL,
+                category_id INTEGER,
+                FOREIGN KEY (category_id) REFERENCES categories(category_id)
+            );
+                
                 CREATE TABLE IF NOT EXISTS users (
                     user_id INTEGER PRIMARY KEY,
                     username TEXT,
@@ -44,13 +58,6 @@ class Database:
                     registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
 
-                CREATE TABLE IF NOT EXISTS dishes (
-                    dish_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    price REAL NOT NULL,
-                    category TEXT
-                );
 
                 CREATE TABLE IF NOT EXISTS orders (
                     order_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -110,43 +117,46 @@ class Database:
         """Получаем все категории блюд"""
         try:
             async with self.conn.execute(
-                    "SELECT DISTINCT category FROM dishes WHERE category IS NOT NULL"
+                    "SELECT category_id, name FROM categories ORDER BY name"
             ) as cursor:
-                return await cursor.fetchall()
+                rows = await cursor.fetchall()
+                return [dict(zip([column[0] for column in cursor.description], row)) for row in rows]
         except Exception as e:
             logger.error(f"Ошибка получения категорий блюд: {e}")
             return []
 
-    async def get_dishes_by_category(self, category: str):
+    async def get_dishes_by_category(self, category_id: int):  # Изменили тип параметра
         """Получаем блюда по категории"""
         try:
             async with self.conn.execute(
-                    "SELECT dish_id, name, description, price FROM dishes WHERE category = ?",
-                    (category,)
-            ) as cursor:
+                    "SELECT dish_id, name, description, price FROM dishes WHERE category_id = ?",  # Стало
+                    (category_id,)) as cursor:
                 return await cursor.fetchall()
         except Exception as e:
-            logger.error(f"Ошибка получения блюд категории {category}: {e}")
+            logger.error(f"Ошибка получения блюд категории: {e}")
             return []
 
     async def get_dish_by_id(self, dish_id: int):
         """Получаем блюдо по ID"""
         try:
             async with self.conn.execute(
-                    "SELECT dish_id, name, description, price FROM dishes WHERE dish_id = ?",
+                    "SELECT dish_id, name, description, price, category_id FROM dishes WHERE dish_id = ?",
                     (dish_id,)
             ) as cursor:
-                return await cursor.fetchone()
+                row = await cursor.fetchone()
+                if row:
+                    return dict(zip([column[0] for column in cursor.description], row))
+                return None
         except Exception as e:
             logger.error(f"Ошибка получения блюда {dish_id}: {e}")
             return None
 
-    async def add_dish(self, name: str, description: str, price: float, category: str):
+    async def add_dish(self, name: str, description: str, price: float, category_id: int):
         """Добавляем новое блюдо в меню"""
         try:
             await self.conn.execute(
-                "INSERT INTO dishes (name, description, price, category) VALUES (?, ?, ?, ?)",
-                (name, description, price, category)
+                "INSERT INTO dishes (name, description, price, category_id) VALUES (?, ?, ?, ?)",
+                (name, description, price, category_id)
             )
             await self.conn.commit()
             return True
@@ -323,20 +333,31 @@ class Database:
         """Получение всех блюд для управления меню"""
         try:
             async with self.conn.execute(
-                    "SELECT dish_id, name, price, category FROM dishes ORDER BY category, name"
+                    "SELECT d.dish_id, d.name, d.price, c.name as category_name "
+                    "FROM dishes d "
+                    "LEFT JOIN categories c ON d.category_id = c.category_id "
+                    "ORDER BY c.name, d.name"
             ) as cursor:
-                return [dict(row) for row in await cursor.fetchall()]
+                rows = await cursor.fetchall()
+                columns = [column[0] for column in cursor.description]
+                return [dict(zip(columns, row)) for row in rows]
         except Exception as e:
             logger.error(f"Ошибка получения списка блюд: {e}")
             return []
 
-    async def update_dish(self, dish_id: int, name: str, description: str, price: float, category: str) -> bool:
+    async def update_dish(self, dish_id: int, **kwargs):
         """Обновление информации о блюде"""
         try:
-            await self.conn.execute(
-                "UPDATE dishes SET name = ?, description = ?, price = ?, category = ? WHERE dish_id = ?",
-                (name, description, price, category, dish_id)
-            )
+            if not kwargs:
+                return True
+
+            set_clause = ", ".join(f"{key} = ?" for key in kwargs.keys())
+            values = list(kwargs.values())
+            values.append(dish_id)
+
+            query = f"UPDATE dishes SET {set_clause} WHERE dish_id = ?"
+
+            await self.conn.execute(query, values)
             await self.conn.commit()
             return True
         except Exception as e:
@@ -480,3 +501,56 @@ class Database:
             await self.conn.close()
             self.conn = None
             logger.info("Соединение с БД закрыто")
+
+    async def add_category(self, name: str) -> bool:
+        """Добавляем новую категорию"""
+        try:
+            await self.conn.execute(
+                "INSERT OR IGNORE INTO categories (name) VALUES (?)",
+                (name,)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка добавления категории: {e}")
+            return False
+
+    async def get_all_categories(self):
+        """Получаем все категории"""
+        try:
+            async with self.conn.execute(
+                    "SELECT * FROM categories ORDER BY name"
+            ) as cursor:
+                rows = await cursor.fetchall()
+                return [dict(zip([column[0] for column in cursor.description], row)) for row in rows]
+        except Exception as e:
+            logger.error(f"Ошибка получения категорий: {e}")
+            return []
+
+    async def delete_category(self, category_id: int) -> bool:
+        """Удаляем категорию"""
+        try:
+            await self.conn.execute(
+                "DELETE FROM categories WHERE category_id = ?",
+                (category_id,)
+            )
+            await self.conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Ошибка удаления категории: {e}")
+            return False
+
+    async def get_category(self, category_id: int):
+        """Получаем категорию по ID"""
+        try:
+            async with self.conn.execute(
+                    "SELECT * FROM categories WHERE category_id = ?",
+                    (category_id,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    return dict(zip([column[0] for column in cursor.description], row))
+                return None
+        except Exception as e:
+            logger.error(f"Ошибка получения категории {category_id}: {e}")
+            return None
