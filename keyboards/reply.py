@@ -1,5 +1,6 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
+
 def request_phone_keyboard():
     """Клавиатура для запроса номера телефона"""
     return ReplyKeyboardMarkup(
@@ -7,8 +8,9 @@ def request_phone_keyboard():
             [KeyboardButton(text="📞 Отправить номер телефона", request_contact=True)]
         ],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
+
 
 def request_location_keyboard():
     """Клавиатура для запроса местоположения"""
@@ -17,8 +19,9 @@ def request_location_keyboard():
             [KeyboardButton(text="📍 Отправить местоположение", request_location=True)]
         ],
         resize_keyboard=True,
-        one_time_keyboard=True
+        one_time_keyboard=True,
     )
+
 
 def main_menu_keyboard():
     """Основное меню бота"""
@@ -26,10 +29,14 @@ def main_menu_keyboard():
         keyboard=[
             [KeyboardButton(text="🍽 Меню")],
             [KeyboardButton(text="🛒 Корзина"), KeyboardButton(text="📦 Мои заказы")],
-            [KeyboardButton(text="📞 Контакты"), KeyboardButton(text="✏️ Оставить отзыв")]
+            [
+                KeyboardButton(text="📞 Контакты"),
+                KeyboardButton(text="✏️ Оставить отзыв"),
+            ],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
+
 
 def menu_categories_keyboard():
     """Клавиатура категорий меню"""
@@ -38,10 +45,11 @@ def menu_categories_keyboard():
             [KeyboardButton(text="🍔 Бургеры"), KeyboardButton(text="🍕 Пицца")],
             [KeyboardButton(text="🍝 Паста"), KeyboardButton(text="🥗 Салаты")],
             [KeyboardButton(text="🍰 Десерты"), KeyboardButton(text="🍹 Напитки")],
-            [KeyboardButton(text="🔙 Назад")]
+            [KeyboardButton(text="🔙 Назад")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
+
 
 def cart_keyboard():
     """Клавиатура для работы с корзиной"""
@@ -49,10 +57,11 @@ def cart_keyboard():
         keyboard=[
             [KeyboardButton(text="✅ Оформить заказ")],
             [KeyboardButton(text="🔄 Очистить корзину")],
-            [KeyboardButton(text="🔙 Назад")]
+            [KeyboardButton(text="🔙 Назад")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
+
 
 def delivery_keyboard():
     """Клавиатура выбора способа получения"""
@@ -60,10 +69,11 @@ def delivery_keyboard():
         keyboard=[
             [KeyboardButton(text="🚗 Доставка")],
             [KeyboardButton(text="🏃 Самовывоз")],
-            [KeyboardButton(text="🔙 Назад")]
+            [KeyboardButton(text="🔙 Назад")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
+
 
 def confirm_order_keyboard():
     """Клавиатура подтверждения заказа"""
@@ -71,21 +81,27 @@ def confirm_order_keyboard():
         keyboard=[
             [KeyboardButton(text="✅ Подтвердить заказ")],
             [KeyboardButton(text="✏️ Изменить адрес")],
-            [KeyboardButton(text="❌ Отменить")]
+            [KeyboardButton(text="❌ Отменить")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
+
 
 def feedback_keyboard():
     """Клавиатура для отзывов"""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="⭐️ 1"), KeyboardButton(text="⭐️ 2"), KeyboardButton(text="⭐️ 3")],
+            [
+                KeyboardButton(text="⭐️ 1"),
+                KeyboardButton(text="⭐️ 2"),
+                KeyboardButton(text="⭐️ 3"),
+            ],
             [KeyboardButton(text="⭐️ 4"), KeyboardButton(text="⭐️ 5")],
-            [KeyboardButton(text="🔙 Назад")]
+            [KeyboardButton(text="🔙 Назад")],
         ],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
+
 
 def remove_keyboard():
     """Удаление клавиатуры"""

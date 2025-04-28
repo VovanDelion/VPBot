@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+(
+  .vscode
+  |venv
+  |.venv
+  |migrations/
+  |.git
+  |__pycache__/
+  |__init__.py
+  |fixtures/
+  |requirements/
+  |.gitignore
+  |template.env
+  |.env
+  |.flake8
+)
+'''

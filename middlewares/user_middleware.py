@@ -5,10 +5,10 @@ from typing import Callable, Dict, Any, Awaitable
 
 class UserMiddleware(BaseMiddleware):
     async def __call__(
-            self,
-            handler: Callable[[Message | CallbackQuery, Dict[str, Any]], Awaitable[Any]],
-            event: Message | CallbackQuery,
-            data: Dict[str, Any]
+        self,
+        handler: Callable[[Message | CallbackQuery, Dict[str, Any]], Awaitable[Any]],
+        event: Message | CallbackQuery,
+        data: Dict[str, Any],
     ) -> Any:
         # Получаем объект пользователя в зависимости от типа события
         if isinstance(event, Message):
@@ -19,9 +19,9 @@ class UserMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         # Получаем пользователя из базы данных
-        db = data.get('db')
+        db = data.get("db")
         if not db:
             raise ValueError("Database connection not found")
 
-        data['user'] = await db.get_user(user_id)
+        data["user"] = await db.get_user(user_id)
         return await handler(event, data)

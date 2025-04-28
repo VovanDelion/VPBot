@@ -9,8 +9,9 @@ from keyboards.reply import request_phone_keyboard, main_menu_keyboard
 # Создаем роутер
 router = Router()
 
+
 # Обработчик команды /start
-@router.message(Command('start'))
+@router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     user = await db.get_user(message.from_user.id)
 
@@ -18,13 +19,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
         await message.answer(
             "👋 Добро пожаловать в бот ресторана 'Вкус питона'!\n"
             "Пожалуйста, поделитесь своим номером телефона:",
-            reply_markup=request_phone_keyboard()
+            reply_markup=request_phone_keyboard(),
         )
         await state.set_state(UserRegistration.Phone)
     else:
         await message.answer(
             f"🍽 Добро пожаловать, {user[2] or message.from_user.full_name}!\n",
-            reply_markup=main_menu_keyboard()
+            reply_markup=main_menu_keyboard(),
         )
 
 
@@ -33,16 +34,15 @@ async def cmd_start(message: types.Message, state: FSMContext):
 async def process_phone(message: types.Message, state: FSMContext):
     phone_number = message.contact.phone_number
 
-    if phone_number.startswith('+'):
-        normalized_phone = '+' + ''.join(c for c in phone_number[1:] if c.isdigit())
+    if phone_number.startswith("+"):
+        normalized_phone = "+" + "".join(c for c in phone_number[1:] if c.isdigit())
     else:
-        normalized_phone = ''.join(c for c in phone_number if c.isdigit())
+        normalized_phone = "".join(c for c in phone_number if c.isdigit())
 
     await state.update_data(phone_number=normalized_phone)
 
     await message.answer(
-        "📝 Теперь введите ваше имя:",
-        reply_markup=types.ReplyKeyboardRemove()
+        "📝 Теперь введите ваше имя:", reply_markup=types.ReplyKeyboardRemove()
     )
     await state.set_state(UserRegistration.Name)
 
@@ -55,19 +55,19 @@ async def process_name(message: types.Message, state: FSMContext):
         user_id=message.from_user.id,
         username=message.from_user.username,
         full_name=message.text,
-        phone=data['phone_number']
+        phone=data["phone_number"],
     )
 
     await message.answer(
         f"✅ Регистрация завершена, {message.text}!\n"
         "Теперь вы можете сделать заказ.",
-        reply_markup=main_menu_keyboard()
+        reply_markup=main_menu_keyboard(),
     )
     await state.clear()
 
 
 # Обработчик команды /help
-@router.message(Command('help'))
+@router.message(Command("help"))
 async def cmd_help(message: types.Message):
     await message.answer(
         "ℹ️ <b>Справка по боту:</b>\n\n"
@@ -80,7 +80,7 @@ async def cmd_help(message: types.Message):
 
 
 # Обработчик команды /profile
-@router.message(Command('profile'))
+@router.message(Command("profile"))
 async def cmd_profile(message: types.Message):
     user = await db.get_user(message.from_user.id)
 
@@ -95,7 +95,7 @@ async def cmd_profile(message: types.Message):
     else:
         await message.answer(
             "Вы еще не зарегистрированы. Нажмите /start",
-            reply_markup=types.ReplyKeyboardRemove()
+            reply_markup=types.ReplyKeyboardRemove(),
         )
 
 

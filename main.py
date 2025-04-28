@@ -6,8 +6,7 @@ from middlewares import register_all_middlewares
 from utils.set_bot_commands import set_default_commands
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -53,5 +52,5 @@ async def main():
         await on_shutdown(bot, db)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

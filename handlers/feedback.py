@@ -20,12 +20,14 @@ async def start_feedback(message: types.Message, state: FSMContext):
     """Начало процесса оставления отзыва"""
     await message.answer(
         "Пожалуйста, оцените наше заведение (1-5 звезд):",
-        reply_markup=feedback_keyboard()
+        reply_markup=feedback_keyboard(),
     )
     await state.set_state(FeedbackProcess.SelectRating)
 
 
-@router.message(F.text.in_(["⭐️ 1", "⭐️ 2", "⭐️ 3", "⭐️ 4", "⭐️ 5"]), FeedbackProcess.SelectRating)
+@router.message(
+    F.text.in_(["⭐️ 1", "⭐️ 2", "⭐️ 3", "⭐️ 4", "⭐️ 5"]), FeedbackProcess.SelectRating
+)
 async def process_rating(message: types.Message, state: FSMContext):
     """Обработка выбранной оценки"""
     rating = int(message.text.split()[1])  # Извлекаем цифру из "⭐️ 1"
@@ -33,12 +35,12 @@ async def process_rating(message: types.Message, state: FSMContext):
 
     await message.answer(
         "Спасибо за оценку! Теперь напишите ваш отзыв (или /skip чтобы пропустить):",
-        reply_markup=remove_keyboard()
+        reply_markup=remove_keyboard(),
     )
     await state.set_state(FeedbackProcess.EnterComment)
 
 
-@router.message(FeedbackProcess.EnterComment, ~F.text.startswith('/'))
+@router.message(FeedbackProcess.EnterComment, ~F.text.startswith("/"))
 async def process_comment(message: types.Message, state: FSMContext):
     """Обработка текстового отзыва"""
     data = await state.get_data()
@@ -47,13 +49,12 @@ async def process_comment(message: types.Message, state: FSMContext):
     await db.add_feedback(
         user_id=message.from_user.id,
         order_id=None,  # Можно привязать к конкретному заказу, если нужно
-        rating=data['rating'],
-        comment=comment
+        rating=data["rating"],
+        comment=comment,
     )
 
     await message.answer(
-        "Спасибо за ваш отзыв! Мы ценим ваше мнение.",
-        reply_markup=main_menu_keyboard()
+        "Спасибо за ваш отзыв! Мы ценим ваше мнение.", reply_markup=main_menu_keyboard()
     )
     await state.clear()
 
@@ -64,16 +65,10 @@ async def skip_comment(message: types.Message, state: FSMContext):
     data = await state.get_data()
 
     await db.add_feedback(
-        user_id=message.from_user.id,
-        order_id=None,
-        rating=data['rating'],
-        comment=None
+        user_id=message.from_user.id, order_id=None, rating=data["rating"], comment=None
     )
 
-    await message.answer(
-        "Спасибо за вашу оценку!",
-        reply_markup=main_menu_keyboard()
-    )
+    await message.answer("Спасибо за вашу оценку!", reply_markup=main_menu_keyboard())
     await state.clear()
 
 
