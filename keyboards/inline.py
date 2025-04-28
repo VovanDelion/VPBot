@@ -5,33 +5,26 @@ import json
 def menu_categories_keyboard(categories):
     keyboard = InlineKeyboardMarkup(inline_keyboard=[])
 
-    for i in range(0, len(categories), 2):
-        row = []
-        for category in categories[i:i + 2]:
-            if isinstance(category, dict):
-                cat_id = category.get('category_id', category.get('id'))
-                name = category.get('name')
-            else:
-                cat_id = category[0]
-                name = category[1]
+    for category in categories:
+        if isinstance(category, dict):
+            cat_id = category.get('category_id')
+            name = category.get('name')
+        else:
+            cat_id = category[0]
+            name = category[1]
 
-            if cat_id and name:
-                row.append(InlineKeyboardButton(
+        if cat_id and name:
+            keyboard.inline_keyboard.append([
+                InlineKeyboardButton(
                     text=name,
-                    callback_data=json.dumps({
-                        'type': 'category',
-                        'action': 'select',
-                        'category_id': int(cat_id)
-                    })
-                ))
-
-        if row:
-            keyboard.inline_keyboard.append(row)
+                    callback_data=f"category_{cat_id}"
+                )
+            ])
 
     keyboard.inline_keyboard.append([
         InlineKeyboardButton(
             text='🛒 Корзина',
-            callback_data=json.dumps({'type': 'cart', 'action': 'view'})
+            callback_data="view_cart"
         )
     ])
 
@@ -73,13 +66,13 @@ def dishes_keyboard(dishes, category_id):
 
     for dish in dishes:
         if isinstance(dish, dict):
-            dish_id = dish.get('dish_id', dish.get('id'))
+            dish_id = dish.get('dish_id')
             name = dish.get('name')
             price = dish.get('price')
         else:
             dish_id = dish[0]
             name = dish[1]
-            price = dish[2] if len(dish) > 2 else None
+            price = dish[3] if len(dish) > 2 else None
 
         if not dish_id or not name:
             continue
@@ -91,23 +84,18 @@ def dishes_keyboard(dishes, category_id):
         keyboard.inline_keyboard.append([
             InlineKeyboardButton(
                 text=text,
-                callback_data=json.dumps({
-                    'type': 'dish',
-                    'action': 'select',
-                    'dish_id': int(dish_id),
-                    'category_id': int(category_id)
-                })
+                callback_data=f"dish_{dish_id}"
             )
         ])
 
     keyboard.inline_keyboard.append([
         InlineKeyboardButton(
-            text='◀️ Назад к категориям',
-            callback_data=json.dumps({'type': 'menu', 'action': 'view_categories'})
+            text='◀️ Назад',
+            callback_data="back_to_menu"
         ),
         InlineKeyboardButton(
             text='🛒 Корзина',
-            callback_data=json.dumps({'type': 'cart', 'action': 'view'})
+            callback_data="view_cart"
         )
     ])
 
@@ -212,11 +200,11 @@ def admin_menu_keyboard():
         ],
         [
             InlineKeyboardButton(text="📝 Управление меню", callback_data="admin_manage_menu"),
-            InlineKeyboardButton(text="📂 Категории", callback_data="admin_manage_categories")
+            InlineKeyboardButton(text="📂 Управление категориями", callback_data="admin_manage_categories")
         ],
         [
             InlineKeyboardButton(text="📦 Управление заказами", callback_data="admin_manage_orders"),
-            InlineKeyboardButton(text="👥 Пользователи", callback_data="admin_manage_users")
+            InlineKeyboardButton(text="📝 Просмотр отзывов", callback_data="admin_view_feedback")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -36,7 +36,9 @@ async def _show_cart(user_id: int, message_or_callback: Union[types.Message, typ
 
     await state.set_state(CartActions.ManageCart)
 
+@router.callback_query(F.data == 'view_cart')
 @router.message(Command('cart'))
+@router.message(F.text == '🛒 Корзина')
 async def show_cart(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     cart_items = await db.get_cart_items(user_id)

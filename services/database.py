@@ -84,7 +84,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS feedback (
                 feedback_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                order_id INTEGER NOT NULL,
+                order_id INTEGER,
                 rating INTEGER NOT NULL,
                 comment TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -554,3 +554,18 @@ class Database:
         except Exception as e:
             logger.error(f"Ошибка получения категории {category_id}: {e}")
             return None
+
+    async def get_all_feedback(self):
+        """Получение всех отзывов"""
+        try:
+            async with self.conn.execute('''
+                SELECT f.*, u.username, u.full_name 
+                FROM feedback f
+                LEFT JOIN users u ON f.user_id = u.user_id
+                ORDER BY f.created_at DESC
+            ''') as cursor:
+                rows = await cursor.fetchall()
+                return [dict(zip([column[0] for column in cursor.description], row)) for row in rows]
+        except Exception as e:
+            logger.error(f"Ошибка получения отзывов: {e}")
+            return []

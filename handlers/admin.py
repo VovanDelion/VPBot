@@ -79,14 +79,12 @@ async def add_dish_price(message: types.Message, state: FSMContext):
         price = float(message.text)
         await state.update_data(price=price)
 
-        # Получаем все категории
         categories = await db.get_all_categories()
         if not categories:
             await message.answer("Нет доступных категорий. Сначала создайте категории.")
             await state.clear()
             return
 
-        # Создаем клавиатуру с кнопками категорий
         builder = InlineKeyboardBuilder()
         for category in categories:
             builder.button(
@@ -94,13 +92,11 @@ async def add_dish_price(message: types.Message, state: FSMContext):
                 callback_data=f'admin_category_{category["category_id"]}'
             )
 
-        # Добавляем кнопку "Назад"
         builder.button(
             text="◀️ Назад",
             callback_data="admin_back"
         )
 
-        # Устанавливаем row_width=2 для кнопок категорий
         builder.adjust(2, 1)
 
         await message.answer(
@@ -393,13 +389,11 @@ async def edit_dish_start(call: types.CallbackQuery, state: FSMContext):
             )
             return
 
-        # Ensure dishes is a list of dictionaries
         if not isinstance(dishes, list) or not all(isinstance(d, dict) for d in dishes):
             raise ValueError("Invalid dishes data format")
 
         builder = InlineKeyboardBuilder()
         for dish in dishes:
-            # Ensure required keys exist
             if not all(key in dish for key in ['dish_id', 'name', 'price']):
                 continue
 
@@ -558,6 +552,48 @@ async def edit_dish_category_select(call: types.CallbackQuery, state: FSMContext
         reply_markup=edit_keyboard()
     )
     await state.set_state(AdminActions.EditDishSelect)
+
+
+@router.callback_query(F.data == 'admin_view_feedback')
+async def view_feedback(call: types.CallbackQuery):
+    """Просмотр всех отзывов"""
+    try:
+        feedbacks = await db.get_all_feedback()
+
+        if not feedbacks:
+            await call.message.edit_text(
+                "Пока нет отзывов",
+                reply_markup=admin_menu_keyboard()
+            )
+            return
+
+        text = "📝 Все отзывы:\n\n"
+        for fb in feedbacks:
+            user = await db.get_user(fb['user_id'])
+            username = user[1] if user and len(user) > 1 else "Аноним"
+            text += (
+                f"⭐️ Оценка: {fb['rating']}/5\n"
+                f"👤 Пользователь: {username}\n"
+                f"📅 Дата: {fb['created_at']}\n"
+            )
+            if fb['comment']:
+                text += f"📝 Комментарий: {fb['comment']}\n"
+            text += "――――――――――――――――――――\n"
+
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")]
+        ])
+
+        await call.message.edit_text(
+            text,
+            reply_markup=keyboard
+        )
+
+    except Exception as e:
+        await call.message.edit_text(
+            "Ошибка при получении отзывов",
+            reply_markup=admin_menu_keyboard()
+        )
 
 @router.callback_query(F.data == 'admin_back')
 async def back_to_admin_menu(call: types.CallbackQuery):
