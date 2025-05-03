@@ -30,7 +30,7 @@ async def start_feedback(message: types.Message, state: FSMContext):
 )
 async def process_rating(message: types.Message, state: FSMContext):
     """Обработка выбранной оценки"""
-    rating = int(message.text.split()[1])  # Извлекаем цифру из "⭐️ 1"
+    rating = int(message.text.split()[1])
     await state.update_data(rating=rating)
 
     await message.answer(
@@ -48,7 +48,7 @@ async def process_comment(message: types.Message, state: FSMContext):
 
     await db.add_feedback(
         user_id=message.from_user.id,
-        order_id=None,  # Можно привязать к конкретному заказу, если нужно
+        order_id=None,
         rating=data["rating"],
         comment=comment,
     )

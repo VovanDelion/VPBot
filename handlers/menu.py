@@ -18,7 +18,7 @@ class MenuNavigation(StatesGroup):
     ChooseCategory = State()
     ChooseDish = State()
 
-
+@router.message(Command("menu"))
 @router.message(F.text == "🍽 Меню")
 async def show_menu_categories(message: types.Message, state: FSMContext):
     categories = await db.get_dish_categories()

@@ -6,11 +6,9 @@ from loader import db, bot
 from states import UserRegistration
 from keyboards.reply import request_phone_keyboard, main_menu_keyboard
 
-# Создаем роутер
 router = Router()
 
 
-# Обработчик команды /start
 @router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     user = await db.get_user(message.from_user.id)
@@ -29,7 +27,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
         )
 
 
-# Обработчик получения номера телефона
 @router.message(F.contact, UserRegistration.Phone)
 async def process_phone(message: types.Message, state: FSMContext):
     phone_number = message.contact.phone_number
@@ -47,7 +44,6 @@ async def process_phone(message: types.Message, state: FSMContext):
     await state.set_state(UserRegistration.Name)
 
 
-# Обработчик получения имени
 @router.message(UserRegistration.Name)
 async def process_name(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -66,7 +62,6 @@ async def process_name(message: types.Message, state: FSMContext):
     await state.clear()
 
 
-# Обработчик команды /help
 @router.message(Command("help"))
 async def cmd_help(message: types.Message):
     await message.answer(
@@ -74,12 +69,18 @@ async def cmd_help(message: types.Message):
         "/start - Начать работу с ботом\n"
         "/menu - Посмотреть меню\n"
         "/cart - Посмотреть корзину\n"
+        "/profile - Посмотреть профиль\n"
         "/help - Получить справку\n\n"
         "Если у вас возникли проблемы, обратитесь в поддержку."
     )
 
+@router.message(F.text == "📞 Контакты")
+async def contacts(message: types.Message):
+    await message.answer(
+        "🙋‍♂️ Подержака: 89990109091\n"
+        "🏆 Сотрудничесвто: 89188589091"
+    )
 
-# Обработчик команды /profile
 @router.message(Command("profile"))
 async def cmd_profile(message: types.Message):
     user = await db.get_user(message.from_user.id)
@@ -89,7 +90,7 @@ async def cmd_profile(message: types.Message):
         text += f"🆔 ID: {user[0]}\n"
         text += f"👤 Имя: {user[2]}\n"
         text += f"📞 Телефон: {user[3]}\n"
-        text += f"📅 Дата регистрации: {user[4]}"
+        text += f"📅 Дата регистрации: {user[4].split()[0]}"
 
         await message.answer(text)
     else:
@@ -99,6 +100,5 @@ async def cmd_profile(message: types.Message):
         )
 
 
-# Функция для регистрации обработчиков
 def register_user_handlers(dp):
     dp.include_router(router)
