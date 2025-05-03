@@ -339,7 +339,7 @@ async def delete_category_start(call: types.CallbackQuery):
         builder.row(
             InlineKeyboardButton(
                 text=f"🗑 {category['name']}",
-                callback_data=f"admin_view_category_{category['category_id']}",
+                callback_data=f"admin_confirm_delete_category_{category['category_id']}",
             )
         )
     builder.row(

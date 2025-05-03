@@ -18,6 +18,7 @@ class MenuNavigation(StatesGroup):
     ChooseCategory = State()
     ChooseDish = State()
 
+
 @router.message(Command("menu"))
 @router.message(F.text == "🍽 Меню")
 async def show_menu_categories(message: types.Message, state: FSMContext):
@@ -51,14 +52,10 @@ async def show_dishes_in_category(call: types.CallbackQuery, state: FSMContext):
         await call.answer("⚠️ Ошибка загрузки меню")
 
 
-@router.callback_query(
-    lambda c: c.data.startswith("{") and json.loads(c.data).get("type") == "dish",
-    MenuNavigation.ChooseDish,
-)
+@router.callback_query(F.data.startswith("dish_"))
 async def show_dish_details(call: types.CallbackQuery, state: FSMContext):
     try:
-        data = json.loads(call.data)
-        dish_id = data["dish_id"]
+        dish_id = int(call.data.split("_")[1])
         dish = await db.get_dish_by_id(dish_id)
 
         if not dish:

@@ -74,12 +74,24 @@ async def cmd_help(message: types.Message):
         "Если у вас возникли проблемы, обратитесь в поддержку."
     )
 
+
 @router.message(F.text == "📞 Контакты")
 async def contacts(message: types.Message):
     await message.answer(
-        "🙋‍♂️ Подержака: 89990109091\n"
-        "🏆 Сотрудничесвто: 89188589091"
+        "🙋‍♂️ Подержака: 89990109091\n" "🏆 Сотрудничесвто: 89188589091"
     )
+
+
+P_count = 0
+
+
+@router.message(F.text.lower().strip() == "вкуспитона")
+async def VP(message: types.Message):
+    global P_count
+    P_count += 1
+    if P_count % 3 == 0:
+        await message.answer("Большой Питон гордится тобой ❤️🐍")
+
 
 @router.message(Command("profile"))
 async def cmd_profile(message: types.Message):
