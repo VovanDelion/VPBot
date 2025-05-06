@@ -56,7 +56,8 @@ class Database:
                     username TEXT,
                     full_name TEXT,
                     phone TEXT,
-                    registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    profile_photo TEXT
                 );
 
 
@@ -102,17 +103,18 @@ class Database:
             raise
 
     async def add_user(
-        self,
-        user_id: int,
-        username: Optional[str],
-        full_name: str,
-        phone: Optional[str] = None,
+            self,
+            user_id: int,
+            username: Optional[str],
+            full_name: str,
+            phone: Optional[str] = None,
+            profile_photo: Optional[str] = None
     ) -> bool:
         """Добавляем нового пользователя"""
         try:
             await self.conn.execute(
-                "INSERT OR REPLACE INTO users (user_id, username, full_name, phone) VALUES (?, ?, ?, ?)",
-                (user_id, username, full_name, phone),
+                "INSERT OR REPLACE INTO users (user_id, username, full_name, phone, profile_photo) VALUES (?, ?, ?, ?, ?)",
+                (user_id, username, full_name, phone, profile_photo),
             )
             await self.conn.commit()
             return True
@@ -186,7 +188,7 @@ class Database:
 
         try:
             async with self.conn.execute(
-                "SELECT * FROM users WHERE user_id = ?", (user_id,)
+                    "SELECT * FROM users WHERE user_id = ?", (user_id,)
             ) as cursor:
                 return await cursor.fetchone()
         except Exception as e:

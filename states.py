@@ -4,6 +4,7 @@ from aiogram.fsm.state import State, StatesGroup
 class UserRegistration(StatesGroup):
     Phone = State()
     Name = State()
+    Photo = State()
 
 
 class MenuNavigation(StatesGroup):

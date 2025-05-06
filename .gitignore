@@ -54,3 +54,4 @@ local_settings.py
 docker-compose.override.yml
 *.db
 *.sqlite
+/data/profile_photos/
