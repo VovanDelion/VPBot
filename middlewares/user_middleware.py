@@ -10,7 +10,6 @@ class UserMiddleware(BaseMiddleware):
         event: Message | CallbackQuery,
         data: Dict[str, Any],
     ) -> Any:
-        # Получаем объект пользователя в зависимости от типа события
         if isinstance(event, Message):
             user_id = event.from_user.id
         elif isinstance(event, CallbackQuery):
@@ -18,7 +17,6 @@ class UserMiddleware(BaseMiddleware):
         else:
             return await handler(event, data)
 
-        # Получаем пользователя из базы данных
         db = data.get("db")
         if not db:
             raise ValueError("Database connection not found")

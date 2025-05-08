@@ -10,6 +10,7 @@ from keyboards.reply import request_phone_keyboard, main_menu_keyboard
 
 router = Router()
 
+
 @router.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
     user = await db.get_user(message.from_user.id)
@@ -35,6 +36,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
                 reply_markup=main_menu_keyboard(),
             )
 
+
 @router.message(F.contact, UserRegistration.Phone)
 async def process_phone(message: types.Message, state: FSMContext):
     phone_number = message.contact.phone_number
@@ -46,10 +48,10 @@ async def process_phone(message: types.Message, state: FSMContext):
 
     await state.update_data(phone_number=normalized_phone, full_name=None)
     await message.answer(
-        "📝 Теперь введите ваше имя:",
-        reply_markup=types.ReplyKeyboardRemove()
+        "📝 Теперь введите ваше имя:", reply_markup=types.ReplyKeyboardRemove()
     )
     await state.set_state(UserRegistration.Name)
+
 
 @router.message(UserRegistration.Name)
 async def process_name(message: types.Message, state: FSMContext):
@@ -57,9 +59,10 @@ async def process_name(message: types.Message, state: FSMContext):
     await message.answer(
         "📸 Теперь вы можете загрузить фото профиля (необязательно).\n"
         "Если не хотите добавлять фото, нажмите /skip",
-        reply_markup=types.ReplyKeyboardRemove()
+        reply_markup=types.ReplyKeyboardRemove(),
     )
     await state.set_state(UserRegistration.Photo)
+
 
 @router.message(Command("skip"), UserRegistration.Photo)
 async def skip_photo(message: types.Message, state: FSMContext):
@@ -69,7 +72,7 @@ async def skip_photo(message: types.Message, state: FSMContext):
         username=message.from_user.username,
         full_name=data["full_name"],
         phone=data["phone_number"],
-        profile_photo=None
+        profile_photo=None,
     )
 
     await message.answer(
@@ -78,6 +81,7 @@ async def skip_photo(message: types.Message, state: FSMContext):
         reply_markup=main_menu_keyboard(),
     )
     await state.clear()
+
 
 @router.message(F.photo, UserRegistration.Photo)
 async def process_photo(message: types.Message, state: FSMContext):
@@ -99,16 +103,17 @@ async def process_photo(message: types.Message, state: FSMContext):
         username=message.from_user.username,
         full_name=data["full_name"],
         phone=data["phone_number"],
-        profile_photo=filename
+        profile_photo=filename,
     )
 
     await message.answer_photo(
         FSInputFile(filename),
         caption=f"✅ Регистрация завершена, {data['full_name']}!\n"
-                "Теперь вы можете сделать заказ.",
+        "Теперь вы можете сделать заказ.",
         reply_markup=main_menu_keyboard(),
     )
     await state.clear()
+
 
 @router.message(Command("help"))
 async def cmd_help(message: types.Message):
@@ -122,13 +127,14 @@ async def cmd_help(message: types.Message):
         "Если у вас возникли проблемы, обратитесь в поддержку."
     )
 
+
 @router.message(F.text == "📞 Контакты")
 async def contacts(message: types.Message):
-    await message.answer(
-        "🙋‍♂️ Подержака: 89990109091\n🏆 Сотрудничесвто: 89188589091"
-    )
+    await message.answer("🙋‍♂️ Подержака: 89990109091\n🏆 Сотрудничесвто: 89188589091")
+
 
 P_count = 0
+
 
 @router.message(F.text.lower().strip() == "вкуспитона")
 async def VP(message: types.Message):
@@ -136,6 +142,7 @@ async def VP(message: types.Message):
     P_count += 1
     if P_count % 3 == 0:
         await message.answer("Большой Питон гордится тобой ❤️🐍")
+
 
 @router.message(Command("profile"))
 async def cmd_profile(message: types.Message):
@@ -158,6 +165,7 @@ async def cmd_profile(message: types.Message):
             "Вы еще не зарегистрированы. Нажмите /start",
             reply_markup=types.ReplyKeyboardRemove(),
         )
+
 
 def register_user_handlers(dp):
     dp.include_router(router)

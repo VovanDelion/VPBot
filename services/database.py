@@ -103,12 +103,12 @@ class Database:
             raise
 
     async def add_user(
-            self,
-            user_id: int,
-            username: Optional[str],
-            full_name: str,
-            phone: Optional[str] = None,
-            profile_photo: Optional[str] = None
+        self,
+        user_id: int,
+        username: Optional[str],
+        full_name: str,
+        phone: Optional[str] = None,
+        profile_photo: Optional[str] = None,
     ) -> bool:
         """Добавляем нового пользователя"""
         try:
@@ -188,7 +188,7 @@ class Database:
 
         try:
             async with self.conn.execute(
-                    "SELECT * FROM users WHERE user_id = ?", (user_id,)
+                "SELECT * FROM users WHERE user_id = ?", (user_id,)
             ) as cursor:
                 return await cursor.fetchone()
         except Exception as e:
