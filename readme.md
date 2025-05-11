@@ -1,5 +1,4 @@
-[![CI](https://github.com/VovanDelion/VPBot/actions/workflows/.github-black.yml/badge.svg)](https://github.com/VovanDelion/VPBot/actions)
-
+[![CI](https://github.com/VovanDelion/VPBot/actions/workflows/ci.yml/badge.svg)](https://github.com/VovanDelion/VPBot/actions)
 # VPBot — телеграм-бот для ресторана "Вкус питона"
 
 ### Состав Участников  
