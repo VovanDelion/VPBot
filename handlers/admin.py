@@ -454,7 +454,6 @@ async def edit_dish_start(call: types.CallbackQuery, state: FSMContext):
     F.data.startswith("admin_edit_select_"), AdminActions.EditDishSelect
 )
 async def edit_dish_select(call: types.CallbackQuery, state: FSMContext):
-    """Обработка выбора блюда для редактирования"""
     dish_id = int(call.data.split("_")[3])
     dish = await db.get_dish_by_id(dish_id)
 
@@ -466,7 +465,7 @@ async def edit_dish_select(call: types.CallbackQuery, state: FSMContext):
 
     await call.message.edit_text(
         f"Выберите что редактировать для блюда {dish['name']}:",
-        reply_markup=edit_keyboard(),
+        reply_markup=edit_keyboard(dish_id=dish_id),
     )
 
 
@@ -487,7 +486,7 @@ async def edit_dish_name(message: types.Message, state: FSMContext):
     )
     await message.answer(
         f"✅ Название успешно обновлено!\n\n" f"Выберите что редактировать для блюда:",
-        reply_markup=edit_keyboard(),
+        reply_markup=edit_keyboard(dish_id=data["dish_id"]),
     )
     await state.set_state(AdminActions.EditDishSelect)
 
@@ -507,7 +506,10 @@ async def edit_dish_description(message: types.Message, state: FSMContext):
         dish_id=data["dish_id"],
         description=message.text,
     )
-    await message.answer("Описание успешно обновлено!", reply_markup=edit_keyboard())
+    await message.answer(
+        "Описание успешно обновлено!",
+        reply_markup=edit_keyboard(dish_id=data["dish_id"]),
+    )
     await state.set_state(AdminActions.EditDishSelect)
 
 
@@ -528,7 +530,10 @@ async def edit_dish_price(message: types.Message, state: FSMContext):
             dish_id=data["dish_id"],
             price=price,
         )
-        await message.answer("Цена успешно обновлена!", reply_markup=edit_keyboard())
+        await message.answer(
+            "Цена успешно обновлена!",
+            reply_markup=edit_keyboard(dish_id=data["dish_id"]),
+        )
         await state.set_state(AdminActions.EditDishSelect)
     except ValueError:
         await message.answer("Пожалуйста, введите корректную цену (число):")
@@ -571,7 +576,7 @@ async def edit_dish_category_select(call: types.CallbackQuery, state: FSMContext
     category = await db.get_category(category_id)
     await call.message.edit_text(
         f"Категория успешно изменена на {category['name']}!",
-        reply_markup=edit_keyboard(),
+        reply_markup=edit_keyboard(dish_id=data["dish_id"]),
     )
     await state.set_state(AdminActions.EditDishSelect)
 
@@ -612,6 +617,48 @@ async def view_feedback(call: types.CallbackQuery):
     except Exception as e:
         await call.message.edit_text(
             "Ошибка при получении отзывов", reply_markup=admin_menu_keyboard()
+        )
+
+
+@router.callback_query(F.data.startswith("admin_delete_dish_"))
+async def delete_dish_confirmation(call: types.CallbackQuery):
+    dish_id = int(call.data.split("_")[3])
+    dish = await db.get_dish_by_id(dish_id)
+
+    if not dish:
+        await call.answer("Блюдо не найдено")
+        return
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Да", callback_data=f"admin_do_delete_dish_{dish_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Нет", callback_data=f"admin_edit_select_{dish_id}"
+                ),
+            ]
+        ]
+    )
+
+    await call.message.edit_text(
+        f"Вы уверены, что хотите удалить блюдо '{dish['name']}'?", reply_markup=keyboard
+    )
+
+
+@router.callback_query(F.data.startswith("admin_do_delete_dish_"))
+async def delete_dish_execute(call: types.CallbackQuery):
+    dish_id = int(call.data.split("_")[4])
+    success = await db.delete_dish(dish_id)
+
+    if success:
+        await call.message.edit_text(
+            "✅ Блюдо успешно удалено!", reply_markup=admin_menu_keyboard()
+        )
+    else:
+        await call.message.edit_text(
+            "❌ Не удалось удалить блюдо", reply_markup=admin_menu_keyboard()
         )
 
 

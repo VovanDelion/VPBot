@@ -25,7 +25,7 @@ def menu_categories_keyboard(categories):
     return keyboard
 
 
-def edit_keyboard():
+def edit_keyboard(dish_id: int):
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
@@ -41,6 +41,11 @@ def edit_keyboard():
                 InlineKeyboardButton(
                     text="📂 Категория", callback_data="admin_edit_category"
                 ),
+            ],
+            [
+                InlineKeyboardButton(
+                    text="🗑️ Удалить", callback_data=f"admin_delete_dish_{dish_id}"
+                )
             ],
             [InlineKeyboardButton(text="◀️ Назад", callback_data="admin_back")],
         ]
