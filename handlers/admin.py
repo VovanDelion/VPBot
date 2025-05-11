@@ -7,6 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from keyboards.inline import admin_menu_keyboard, edit_keyboard
 from loader import db
+from data.config import ADMIN_IDS
 from states import AdminActions
 from utils.helpers import is_admin
 
@@ -26,9 +27,14 @@ class AdminActions(StatesGroup):
     EditDishCategory = State()
 
 
-@router.message(Command("admin"), F.from_user.func(lambda user: is_admin(user.id)))
+@router.message(Command("admin"))
 async def show_admin_menu(message: types.Message):
-    await message.answer("👨‍💻 Админ-панель:", reply_markup=admin_menu_keyboard())
+    user = await db.get_user(message.from_user.id)
+
+    if user[0] in ADMIN_IDS:
+        await message.answer("👨‍💻 Админ-панель:", reply_markup=admin_menu_keyboard())
+    else:
+        await message.answer("Вы не админ")
 
 
 @router.callback_query(
