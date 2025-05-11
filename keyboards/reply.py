@@ -38,19 +38,6 @@ def main_menu_keyboard():
     )
 
 
-def menu_categories_keyboard():
-    """Клавиатура категорий меню"""
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🍔 Бургеры"), KeyboardButton(text="🍕 Пицца")],
-            [KeyboardButton(text="🍝 Паста"), KeyboardButton(text="🥗 Салаты")],
-            [KeyboardButton(text="🍰 Десерты"), KeyboardButton(text="🍹 Напитки")],
-            [KeyboardButton(text="🔙 Назад")],
-        ],
-        resize_keyboard=True,
-    )
-
-
 def cart_keyboard():
     """Клавиатура для работы с корзиной"""
     return ReplyKeyboardMarkup(
@@ -97,7 +84,6 @@ def feedback_keyboard():
                 KeyboardButton(text="⭐️ 3"),
             ],
             [KeyboardButton(text="⭐️ 4"), KeyboardButton(text="⭐️ 5")],
-            [KeyboardButton(text="🔙 Назад")],
         ],
         resize_keyboard=True,
     )
