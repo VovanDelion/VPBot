@@ -1,4 +1,6 @@
-# VPBot — телеграм-бот для ресторана "Вкус питона"  
+[![CI](https://github.com/VovanDelion/VPBot/actions/workflows/.github-black.yml/badge.svg)](https://github.com/VovanDelion/VPBot/actions)
+
+# VPBot — телеграм-бот для ресторана "Вкус питона"
 
 ### Состав Участников  
 - Барашев Владимир
@@ -18,9 +20,9 @@
 3️⃣ Ждёшь доставку с улыбкой!  
 
 ### Технологии  
-- Бэкенд: Python (aiogram, asyncio, TeleBot)  
+- Бэкенд: Python (aiogram, asyncio)  
 - База данных: SQLite
-- Хостинг: Pythonanywhere
+- Хостинг: github codespace
 
 ### Зоны ответственности  
 - Барашев Владимир — Админ-панель, Меню, Обратная связь
