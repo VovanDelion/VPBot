@@ -3,6 +3,7 @@ from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from keyboards.inline import confirm_order_keyboard, rating_keyboard
 from keyboards.reply import request_phone_keyboard, request_location_keyboard
@@ -18,28 +19,116 @@ class OrderProcess(StatesGroup):
     EnterPhone = State()
 
 
+@router.message(F.text == "🛒 Корзина")
+async def show_cart(message: types.Message):
+    cart_items = await db.get_cart_items(message.from_user.id)
+
+    if not cart_items:
+        await message.answer("Ваша корзина пуста")
+        return
+
+    total = 0
+    cart_text = "🛒 Ваша корзина:\n\n"
+
+    for item in cart_items:
+        cart_text += f"{item['name']} - {item['quantity']} x {item['price']} руб. = {item['quantity'] * item['price']} руб.\n"
+        total += item['quantity'] * item['price']
+
+    cart_text += f"\n💳 Итого: {total} руб."
+
+    # Создаем клавиатуру для управления корзиной
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        types.InlineKeyboardButton(
+            text="❌ Очистить корзину",
+            callback_data="clear_cart"
+        ),
+        types.InlineKeyboardButton(
+            text="✅ Оформить заказ",
+            callback_data="checkout"
+        )
+    )
+    builder.adjust(1)
+
+    await message.answer(
+        cart_text,
+        reply_markup=builder.as_markup()
+    )
+
+
+@router.callback_query(F.data == "clear_cart")
+async def clear_cart(call: types.CallbackQuery):
+    await db.clear_cart(call.from_user.id)
+    await call.message.edit_text("Ваша корзина очищена")
+    await call.answer()
+
+
 @router.message(F.text == "📦 Мои заказы")
 async def show_user_orders(message: types.Message):
     orders = await db.get_user_orders(message.from_user.id)
+
     if not orders:
         await message.answer("У вас пока нет заказов")
         return
 
-    text = "📦 Ваши заказы:\n\n"
+    orders_text = "📦 Ваши заказы:\n\n"
+
     for order in orders:
-        text += f"🔹 #{order['id']} - {order['status']} - {order['total']} руб.\n"
+        status_emoji = {
+            'new': '🆕',
+            'processing': '🔄',
+            'completed': '✅',
+            'cancelled': '❌'
+        }.get(order['status'].lower(), '❓')
 
-    await message.answer(text)
+        orders_text += (
+            f"{status_emoji} Заказ #{order['id']}\n"
+            f"📅 {order['created_at'].strftime('%d.%m.%Y %H:%M')}\n"
+            f"💰 Сумма: {order['total']} руб.\n"
+            f"🚚 {order['delivery_type']}\n"
+            f"📦 {len(order['items'])} позиций\n\n"
+        )
+
+    await message.answer(orders_text)
 
 
-@router.callback_query(F.text == "📦 Мои заказы")
+@router.callback_query(F.data == "checkout")
+async def start_checkout(call: types.CallbackQuery, state: FSMContext):
+    cart_items = await db.get_cart_items(call.from_user.id)
+
+    if not cart_items:
+        await call.answer("Ваша корзина пуста", show_alert=True)
+        return
+
+    builder = InlineKeyboardBuilder()
+    builder.add(
+        types.InlineKeyboardButton(
+            text="🚗 Самовывоз",
+            callback_data="delivery_pickup"
+        ),
+        types.InlineKeyboardButton(
+            text="🚚 Доставка",
+            callback_data="delivery_delivery"
+        )
+    )
+    builder.adjust(1)
+
+    await call.message.edit_text(
+        "Выберите способ получения заказа:",
+        reply_markup=builder.as_markup()
+    )
+
+    await state.set_state(OrderProcess.ChooseDelivery)
+
+
+@router.callback_query(F.data.startswith("delivery_"))
 async def process_delivery_choice(call: types.CallbackQuery, state: FSMContext):
     delivery_type = call.data.split("_")[1]
     await state.update_data(delivery_type=delivery_type)
 
-    user_data = await db.get_user(call.from_user.id)
-
     if delivery_type == "delivery":
+        user_data = await db.get_user(call.from_user.id)
+
         if user_data and user_data.get("address"):
             await call.message.edit_text(
                 f"Доставка по адресу: {user_data['address']}\n"
@@ -54,7 +143,8 @@ async def process_delivery_choice(call: types.CallbackQuery, state: FSMContext):
         await state.set_state(OrderProcess.EnterAddress)
     else:
         await call.message.edit_text(
-            "Самовывоз по адресу: ул. Питонова, 42\n" "Время работы: 10:00 - 22:00"
+            "Самовывоз по адресу: ул. Питонова, 42\n"
+            "Время работы: 10:00 - 22:00"
         )
         await state.set_state(OrderProcess.EnterPhone)
         await call.message.answer(
@@ -63,7 +153,6 @@ async def process_delivery_choice(call: types.CallbackQuery, state: FSMContext):
         )
 
 
-# Исправленный обработчик контактов
 @router.message(F.content_type == "contact", OrderProcess.EnterPhone)
 async def process_phone(message: types.Message, state: FSMContext):
     phone_number = message.contact.phone_number
@@ -73,6 +162,7 @@ async def process_phone(message: types.Message, state: FSMContext):
     cart_items = await db.get_cart_items(message.from_user.id)
 
     total = sum(item["price"] * item["quantity"] for item in cart_items)
+
     if "promo_code" in data:
         discount = data["promo_discount"]
         total = total * (1 - discount)
@@ -100,7 +190,8 @@ async def process_phone(message: types.Message, state: FSMContext):
 
     await asyncio.sleep(3600)
     await message.answer(
-        "Пожалуйста, оцените ваш заказ:", reply_markup=rating_keyboard(order_id)
+        "Пожалуйста, оцените ваш заказ:",
+        reply_markup=rating_keyboard(order_id)
     )
 
     await state.clear()

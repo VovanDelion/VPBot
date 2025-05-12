@@ -37,7 +37,7 @@ def format_order(order_items):
         )
 
     text += "\n".join(items_text)
-    text += f"\n\n<b>Итого: {order['total_amount']} руб.</b>"
+    text += f"\n\n<b>💳Итого: {order['total_amount']} руб.</b>"
 
     return text
 
