@@ -4,9 +4,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from keyboards.inline import confirm_order_keyboard, rating_keyboard
-from keyboards.reply import request_phone_keyboard, request_location_keyboard
+from keyboards.reply import request_phone_keyboard, request_location_keyboard, main_menu_keyboard
 from loader import db
 from utils.helpers import format_order
 
@@ -129,16 +129,19 @@ async def process_delivery_choice(call: types.CallbackQuery, state: FSMContext):
     if delivery_type == "delivery":
         user_data = await db.get_user(call.from_user.id)
 
-        if user_data and user_data.get("address"):
+        location_keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(
+                    text="📍 Отправить местоположение",
+                    callback_data="send_location"
+                )]
+            ]
+        )
+
+        if user_data:
             await call.message.edit_text(
-                f"Доставка по адресу: {user_data['address']}\n"
-                "Подтвердите адрес или отправьте новый:",
-                reply_markup=request_location_keyboard(),
-            )
-        else:
-            await call.message.edit_text(
-                "Пожалуйста, отправьте ваш адрес доставки:",
-                reply_markup=request_location_keyboard(),
+                "Отправте адрес:",
+                reply_markup=location_keyboard,
             )
         await state.set_state(OrderProcess.EnterAddress)
     else:
@@ -146,12 +149,19 @@ async def process_delivery_choice(call: types.CallbackQuery, state: FSMContext):
             "Самовывоз по адресу: ул. Питонова, 42\n"
             "Время работы: 10:00 - 22:00"
         )
-        await state.set_state(OrderProcess.EnterPhone)
-        await call.message.answer(
-            "Пожалуйста, отправьте ваш номер телефона:",
-            reply_markup=request_phone_keyboard(),
-        )
 
+@router.callback_query(F.data == "send_location")
+async def request_location(call: types.CallbackQuery):
+    await call.message.answer("зов",
+        reply_markup=request_location_keyboard()
+    )
+
+@router.message(F.content_type == "location")
+async def handle_location(message: types.Message):
+    await message.answer(
+        "Спасибо! Ваше местоположение получено.",
+        reply_markup=main_menu_keyboard()
+    )
 
 @router.message(F.content_type == "contact", OrderProcess.EnterPhone)
 async def process_phone(message: types.Message, state: FSMContext):

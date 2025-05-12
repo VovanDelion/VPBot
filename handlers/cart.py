@@ -2,8 +2,10 @@ from aiogram import Router, types, F
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from keyboards.inline import cart_keyboard, menu_keyboard
+import loader
+from keyboards.inline import cart_keyboard, menu_categories_keyboard
 from loader import db
+from handlers.menu import show_menu_categories
 from states import CartActions
 from utils.helpers import format_cart
 from typing import Union
@@ -27,12 +29,12 @@ async def _show_cart(user_id: int, message_or_callback: Union[types.Message, typ
     if isinstance(message_or_callback, types.Message):
         await message_or_callback.answer(
             text,
-            reply_markup=cart_keyboard(cart_items, total)
+            reply_markup=cart_keyboard(cart_items)
         )
     else:
         await message_or_callback.message.edit_text(
             text,
-            reply_markup=cart_keyboard(cart_items, total)
+            reply_markup=cart_keyboard(cart_items)
         )
 
     await state.set_state(CartActions.ManageCart)
@@ -60,15 +62,15 @@ async def add_to_cart(callback: types.CallbackQuery, state: FSMContext):
         return
 
     # Добавляем блюдо в корзину
+    await db.create_cart_tables()
     await db.add_to_cart(user_id, dish_id, dish['name'], dish['price'])
 
     await callback.answer(f"{dish['name']} добавлено в корзину!")
 
     # Возвращаемся в меню
-    menu = await db.get_menu()
     await callback.message.edit_text(
         "🍽 Меню:",
-        reply_markup=menu_keyboard(menu)
+        show_menu_categories()
     )
 
 
@@ -104,7 +106,7 @@ async def clear_cart(callback: types.CallbackQuery, state: FSMContext):
     menu = await db.get_menu()
     await callback.message.edit_text(
         "🍽 Меню:",
-        reply_markup=menu_keyboard(menu)
+        reply_markup=menu_categories_keyboard(menu)
     )
 
 

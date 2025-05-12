@@ -434,6 +434,8 @@ class Database:
                     cart_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
                     dish_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,     
+                    price REAL NOT NULL, 
                     quantity INTEGER DEFAULT 1,
                     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(user_id),
@@ -444,6 +446,7 @@ class Database:
                     item_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     cart_id INTEGER NOT NULL,
                     dish_id INTEGER NOT NULL,
+                    
                     quantity INTEGER DEFAULT 1,
                     FOREIGN KEY (cart_id) REFERENCES cart(cart_id),
                     FOREIGN KEY (dish_id) REFERENCES dishes(dish_id)
@@ -460,48 +463,75 @@ class Database:
         """Получаем содержимое корзины пользователя"""
         try:
             async with self.conn.execute(
-                """
-                SELECT c.cart_id, d.name, c.quantity, d.price 
-                FROM cart c
-                JOIN dishes d ON c.dish_id = d.dish_id
-                WHERE c.user_id = ?
-            """,
-                (user_id,),
+                    """
+                    SELECT c.cart_id, d.name, c.quantity, d.price 
+                    FROM cart c
+                    JOIN dishes d ON c.dish_id = d.dish_id
+                    WHERE c.user_id = ?
+                    """,
+                    (user_id,),
             ) as cursor:
-                return await cursor.fetchall()
+                rows = await cursor.fetchall()
+                columns = [column[0] for column in cursor.description]
+                return [dict(zip(columns, row)) for row in rows]
         except Exception as e:
             logger.error(f"Ошибка получения корзины для пользователя {user_id}: {e}")
             return []
 
-    async def add_to_cart(self, user_id: int, dish_id: int, quantity: int = 1) -> bool:
-        """Добавляем блюдо в корзину"""
+    async def add_to_cart(self, user_id: int, dish_id: int, name: str, price: float):
+        """Добавляет блюдо в корзину"""
         try:
-            # Проверяем, есть ли уже такое блюдо в корзине
-            async with self.conn.execute(
-                "SELECT cart_id, quantity FROM cart WHERE user_id = ? AND dish_id = ?",
-                (user_id, dish_id),
-            ) as cursor:
-                existing = await cursor.fetchone()
-
-            if existing:
-                # Обновляем количество, если блюдо уже в корзине
-                new_quantity = existing[1] + quantity
-                await self.conn.execute(
-                    "UPDATE cart SET quantity = ? WHERE cart_id = ?",
-                    (new_quantity, existing[0]),
-                )
-            else:
-                # Добавляем новую запись
-                await self.conn.execute(
-                    "INSERT INTO cart (user_id, dish_id, quantity) VALUES (?, ?, ?)",
-                    (user_id, dish_id, quantity),
-                )
-
-                await self.conn.commit()
-            return True
+            await self.conn.execute(
+                """
+                INSERT OR REPLACE INTO cart (user_id, dish_id, name, price, quantity)
+                VALUES (?, ?, ?, ?, COALESCE((SELECT quantity FROM cart WHERE user_id = ? AND dish_id = ?), 0) + 1)
+                """,
+                (user_id, dish_id, name, price, user_id, dish_id)
+            )
+            await self.conn.commit()
         except Exception as e:
             logger.error(f"Ошибка добавления в корзину: {e}")
-            return False
+            raise
+
+    async def remove_from_cart(self, user_id: int, dish_id: int):
+        """Удаляет блюдо из корзины"""
+        try:
+            await self.conn.execute(
+                "DELETE FROM cart WHERE user_id = ? AND dish_id = ?",
+                (user_id, dish_id)
+            )
+            await self.conn.commit()
+        except Exception as e:
+            logger.error(f"Ошибка удаления из корзины: {e}")
+            raise
+
+    async def increase_quantity(self, user_id: int, dish_id: int):
+        """Увеличивает количество на 1"""
+        try:
+            await self.conn.execute(
+                "UPDATE cart SET quantity = quantity + 1 WHERE user_id = ? AND dish_id = ?",
+                (user_id, dish_id)
+            )
+            await self.conn.commit()
+        except Exception as e:
+            logger.error(f"Ошибка увеличения количества: {e}")
+            raise
+
+    async def decrease_quantity(self, user_id: int, dish_id: int):
+        """Уменьшает количество на 1 или удаляет если 0"""
+        try:
+            await self.conn.execute(
+                "UPDATE cart SET quantity = quantity - 1 WHERE user_id = ? AND dish_id = ? AND quantity > 1",
+                (user_id, dish_id)
+            )
+            await self.conn.execute(
+                "DELETE FROM cart WHERE user_id = ? AND dish_id = ? AND quantity <= 1",
+                (user_id, dish_id)
+            )
+            await self.conn.commit()
+        except Exception as e:
+            logger.error(f"Ошибка уменьшения количества: {e}")
+            raise
 
     async def remove_from_cart(self, user_id: int, cart_item_id: int) -> bool:
         """Удаляем позицию из корзины"""

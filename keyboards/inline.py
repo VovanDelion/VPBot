@@ -18,10 +18,6 @@ def menu_categories_keyboard(categories):
                 [InlineKeyboardButton(text=name, callback_data=f"category_{cat_id}")]
             )
 
-    keyboard.inline_keyboard.append(
-        [InlineKeyboardButton(text="🛒 Корзина", callback_data="view_cart")]
-    )
-
     return keyboard
 
 
@@ -57,7 +53,7 @@ def back_to_menu_keyboard(dish_id):
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="➕ Добавить в корзину", callback_data=f"add_{dish_id}"
+                    text="➕ Добавить в корзину", callback_data=f"add_to_cart_{dish_id}"
                 )
             ],
             [InlineKeyboardButton(text="⬅️ Назад к меню", callback_data="back_to_menu")],
@@ -92,7 +88,6 @@ def dishes_keyboard(dishes, category_id):
     keyboard.inline_keyboard.append(
         [
             InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_menu"),
-            InlineKeyboardButton(text="🛒 Корзина", callback_data="view_cart"),
         ]
     )
 
@@ -100,7 +95,7 @@ def dishes_keyboard(dishes, category_id):
 
 
 def cart_keyboard(cart_items):
-    keyboard = InlineKeyboardMarkup()
+    keyboard = InlineKeyboardMarkup
 
     for item in cart_items:
         keyboard.row(
