@@ -4,7 +4,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
+from html import escape
 from keyboards.inline import admin_menu_keyboard, edit_keyboard
 from loader import db
 from data.config import ADMIN_IDS
@@ -319,7 +319,10 @@ async def view_category(call: types.CallbackQuery):
 
     text = f"📁 Категория: {category['name']}\n\n"
     text += "🍽 Блюда в этой категории:\n"
-    text += "\n".join([f"- {d['name']} ({d['price']} руб.)" for d in dishes])
+    text += "\n".join([
+        f"- {escape(str(d[1]))} ({escape(str(d[3]))} руб.)"
+        for d in dishes
+    ])
 
     await call.message.edit_text(
         text,
