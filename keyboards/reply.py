@@ -16,7 +16,13 @@ def request_location_keyboard():
     """Клавиатура для запроса местоположения"""
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="📍 Отправить местоположение", request_location=True,  reply_markup=main_menu_keyboard())]
+            [
+                KeyboardButton(
+                    text="📍 Отправить местоположение",
+                    request_location=True,
+                    reply_markup=main_menu_keyboard(),
+                )
+            ]
         ],
         resize_keyboard=True,
         one_time_keyboard=True,

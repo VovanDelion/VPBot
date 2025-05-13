@@ -463,13 +463,13 @@ class Database:
         """Получаем содержимое корзины пользователя"""
         try:
             async with self.conn.execute(
-                    """
+                """
                     SELECT c.cart_id, d.name, c.quantity, d.price 
                     FROM cart c
                     JOIN dishes d ON c.dish_id = d.dish_id
                     WHERE c.user_id = ?
                     """,
-                    (user_id,),
+                (user_id,),
             ) as cursor:
                 rows = await cursor.fetchall()
                 columns = [column[0] for column in cursor.description]
@@ -486,7 +486,7 @@ class Database:
                 INSERT OR REPLACE INTO cart (user_id, dish_id, name, price, quantity)
                 VALUES (?, ?, ?, ?, COALESCE((SELECT quantity FROM cart WHERE user_id = ? AND dish_id = ?), 0) + 1)
                 """,
-                (user_id, dish_id, name, price, user_id, dish_id)
+                (user_id, dish_id, name, price, user_id, dish_id),
             )
             await self.conn.commit()
         except Exception as e:
@@ -497,8 +497,7 @@ class Database:
         """Удаляет блюдо из корзины"""
         try:
             await self.conn.execute(
-                "DELETE FROM cart WHERE user_id = ? AND dish_id = ?",
-                (user_id, dish_id)
+                "DELETE FROM cart WHERE user_id = ? AND dish_id = ?", (user_id, dish_id)
             )
             await self.conn.commit()
         except Exception as e:
@@ -510,7 +509,7 @@ class Database:
         try:
             await self.conn.execute(
                 "UPDATE cart SET quantity = quantity + 1 WHERE user_id = ? AND dish_id = ?",
-                (user_id, dish_id)
+                (user_id, dish_id),
             )
             await self.conn.commit()
         except Exception as e:
@@ -522,11 +521,11 @@ class Database:
         try:
             await self.conn.execute(
                 "UPDATE cart SET quantity = quantity - 1 WHERE user_id = ? AND dish_id = ? AND quantity > 1",
-                (user_id, dish_id)
+                (user_id, dish_id),
             )
             await self.conn.execute(
                 "DELETE FROM cart WHERE user_id = ? AND dish_id = ? AND quantity <= 1",
-                (user_id, dish_id)
+                (user_id, dish_id),
             )
             await self.conn.commit()
         except Exception as e:
